@@ -20,7 +20,7 @@
 #include "Seeed_VEML6070.h" /// https://github.com/Seeed-Studio/Seeed_VEML6070 
 #include "Seeed_BME280.h"   /// https://github.com/seeedstudio/Grove_BME280
 #include "seeed_bme680.h"   /// https://github.com/seeedstudio/Seeed_BME680
-#include "IoTwx.h"         /// https://github.com/iotwx
+#include "IoTwx.h"          /// https://github.com/ncar/esp32-atomlite-arduino-iotwx
 
 #define BMEX80_IIC_ADDR   uint8_t(0x76)
 #define VEMLXX70_IIC_ADDR uint8_t(0x45) // TODO: fix this!
