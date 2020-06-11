@@ -1,0 +1,13 @@
+{
+"iotwx_id":"m5atom/esp32/aaffbbxx",
+"iotwx_mq_ip":"",
+"iotwx_mq_port":"1883",
+"iotwx_publish_interval":"1",
+"iotwx_reset_interval":"360",
+"iotwx_sensor":"grove/i2c",
+"iotwx_timezone":"21600",
+"iotwx_wifi_pwd":"",
+"iotwx_wifi_ssid":"",
+"iotwx_topic":"measurements/iotwx",
+"iotwx_max_frequency":"80"
+}
