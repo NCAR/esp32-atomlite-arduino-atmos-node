@@ -1,2 +1,2 @@
-# esp32_atmos_arduino
-Arduino implementation for IoTwx ATMOS node
+# IoTwx AtmosNode
+Arduino implementation for IoTwx ATMOS node.
