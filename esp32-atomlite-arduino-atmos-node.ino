@@ -23,7 +23,7 @@
 #include "IoTwx.h"          /// https://github.com/ncar/esp32-atomlite-arduino-iotwx
 
 #define BMEX80_IIC_ADDR   uint8_t(0x76)
-#define VEMLXX70_IIC_ADDR uint8_t(0x45) // TODO: fix this!
+#define VEMLXX70_IIC_ADDR uint8_t(0x38) 
 
 IoTwx         node;
 Seeed_BME680  bme680(BMEX80_IIC_ADDR);
@@ -217,7 +217,7 @@ void loop() {
     node.establishCommunications();
     if (bme680_attached) publish_bme680_measurements();
     if (bme280_attached) publish_bme280_measurements();
-    // if (veml6070_attached) publish_veml6070_measurements();
+    if (veml6070_attached) publish_veml6070_measurements();
         
     // Configure the timer to wake us up!
     delay(1000);
