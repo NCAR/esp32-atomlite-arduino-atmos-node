@@ -1,13 +1,15 @@
-{
-"iotwx_id":"m5atom/esp32/aaffbbxx",
-"iotwx_mq_ip":"",
+ {
+"iotwx_local_config":"1",
+"iotwx_calibrated_tip":"0.83",
+"iotwx_id":"m5atom/esp32/aaffbb03",
+"iotwx_mq_ip":"255.255.255.0",
 "iotwx_mq_port":"1883",
 "iotwx_publish_interval":"1",
 "iotwx_reset_interval":"360",
 "iotwx_sensor":"grove/i2c",
 "iotwx_timezone":"21600",
-"iotwx_wifi_pwd":"",
-"iotwx_wifi_ssid":"",
+"iotwx_wifi_pwd":"your+password",
+"iotwx_wifi_ssid":"your+ssid",
 "iotwx_topic":"measurements/iotwx",
 "iotwx_max_frequency":"80"
-}
+} 
