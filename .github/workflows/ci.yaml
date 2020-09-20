@@ -40,10 +40,11 @@ jobs:
           arduino-cli lib update-index --verbose
           arduino-cli lib install NTPClient FastLED ArduinoJson --verbose
           git clone https://github.com/256dpi/arduino-mqtt.git ~/Arduino/libraries/arduino-mqtt
-
-      - name: Install IOTWX Library
-        run: |
+          git clone https://github.com/Seeed-Studio/Seeed_VEML6070.git ~/Arduino/libraries/Seeed_VEML6070
           git clone https://github.com/NCAR/esp32-atomlite-arduino-iotwx.git ~/Arduino/libraries/esp32-atomlite-arduino-iotwx
+
+      - name: List Installed Libraries
+        run: |
           ls -lah ~/Arduino/libraries/*
 
       - name: Compile sketch
