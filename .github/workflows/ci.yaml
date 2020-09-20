@@ -42,6 +42,7 @@ jobs:
           git clone https://github.com/256dpi/arduino-mqtt.git ~/Arduino/libraries/arduino-mqtt
           git clone https://github.com/Seeed-Studio/Seeed_VEML6070.git ~/Arduino/libraries/Seeed_VEML6070
           git clone https://github.com/Seeed-Studio/Grove_BME280.git ~/Arduino/libraries/Grove_BME280
+          git clone https://github.com/Seeed-Studio/Seeed_BME680.git ~/Arduino/libraries/Seeed_BME680
           git clone https://github.com/NCAR/esp32-atomlite-arduino-iotwx.git ~/Arduino/libraries/esp32-atomlite-arduino-iotwx
 
       - name: List Installed Libraries
