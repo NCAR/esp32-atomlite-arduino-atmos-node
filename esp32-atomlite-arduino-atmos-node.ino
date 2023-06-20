@@ -8,6 +8,7 @@
       pmsa003i (air quality)
       scd4x    (true co2)
       ltr390   (uva+b)
+      sht40    (th)
     
     ===
     This code sleeps for 60s, wakes up, takes a measurement,
@@ -28,8 +29,8 @@
 #include "Adafruit_BME680.h"
 #include "Adafruit_PM25AQI.h"
 #include "Adafruit_LTR390.h"
-#include <SensirionI2CScd4x.h>
-
+#include <SensirionI2CScd4x.h>'
+#include "Adafruit_SHT4x.h"
 #include "IoTwx.h"          /// https://github.com/ncar/esp32-atomlite-arduino-iotwx
 
 #define BMEX80_IIC_ADDR   uint8_t(0x76)
@@ -40,6 +41,7 @@ Adafruit_BME680   bme680;
 Adafruit_PM25AQI  aqi = Adafruit_PM25AQI();
 SensirionI2CScd4x scd4x;
 Adafruit_LTR390   ltr = Adafruit_LTR390();
+Adafruit_SHT4x    sht4 = Adafruit_SHT4x();
 
 unsigned long    last_millis       = 0;
 unsigned long    start_millis      = 0;
@@ -48,11 +50,12 @@ bool             bme680_attached   = false;
 bool             pm25aqi_attached  = false;
 bool             scd4x_attached    = false;
 bool             ltr390_attached   = false;
+bool             sht4x_attached    = false;
 
 char*            sensor;
 char*            topic;
 int              timezone;
-int              reset_interval;
+int              reset_interval;  
 int              publish_interval;
 int              max_frequency     = 80;
 
@@ -66,6 +69,7 @@ void publish_ltr390_measurements() {
   }
 
 }
+
 
 void publish_scd4x_measurements() {
   char s[strlen(sensor) + 64];
@@ -92,6 +96,22 @@ void publish_scd4x_measurements() {
       strcpy(s, sensor); strcat(s, "/scd4x/humidity");
       node.publishMQTTMeasurement(topic, s, humidity, 0);
   }
+}
+
+
+void publish_sht4x_measurements() {
+  char s[strlen(sensor) + 64];
+  sensors_event_t humidity, temp;
+
+  delay(1500);
+  
+  sht4.getEvent(&humidity, &temp);
+
+  strcpy(s, sensor); strcat(s, "/sht4x/temperature");
+  node.publishMQTTMeasurement(topic, s, temp.temperature, 0);
+  
+  strcpy(s, sensor); strcat(s, "/sht4x/humidity");
+  node.publishMQTTMeasurement(topic, s, humidity.relative_humidity, 0);
 }
 
 
@@ -216,6 +236,20 @@ void setup() {
         bme680.setGasHeater(320, 150);  // 320*C for 150 ms
       }
 
+      if (!sht4.begin()) {
+        Serial.println("[warn]: Could not find Adafruit Temp/Humidity sensor. Check your connections and verify the address 0x44 is correct.");
+        blink_led(LED_FAIL, LED_FAST);        
+      } else {
+        sht4.setHeater(SHT4X_NO_HEATER);
+        sht4.setPrecision(SHT4X_HIGH_PRECISION);
+
+        sht4x_attached = true;
+        i2c_device_connected = true;
+
+        Serial.println("[info]: OK Found Adafruit SHT4x");
+        blink_led(LED_OK, LED_SLOW);
+      }
+      
       /// pm25aqi
       if (! aqi.begin_I2C()) {
         Serial.println("[warn]: Could not find Adafruit PMSA003I AQ sensor. Check your connections and verify the address 0x12 is correct.");
@@ -294,6 +328,7 @@ void loop() {
     if (pm25aqi_attached) publish_pmsa0031_measurements();
     if (scd4x_attached) publish_scd4x_measurements();
     if (ltr390_attached) publish_ltr390_measurements();
+    if (sht4x_attached) publish_sht4x_measurements();
     
     // Configure the timer to wake us up!
     delay(1000);
