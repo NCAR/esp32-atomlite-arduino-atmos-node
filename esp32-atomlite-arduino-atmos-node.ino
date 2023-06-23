@@ -32,6 +32,8 @@
 #include <SensirionI2CScd4x.h>'
 #include "Adafruit_SHT4x.h"
 #include "IoTwx.h"          /// https://github.com/ncar/esp32-atomlite-arduino-iotwx
+#include <SoftwareSerial.h>
+#include "rg15arduino.h"
 
 #define BMEX80_IIC_ADDR   uint8_t(0x76)
 #define SEALEVELPRESSURE_HPA (1013.25)
@@ -42,6 +44,8 @@ Adafruit_PM25AQI  aqi = Adafruit_PM25AQI();
 SensirionI2CScd4x scd4x;
 Adafruit_LTR390   ltr = Adafruit_LTR390();
 Adafruit_SHT4x    sht4 = Adafruit_SHT4x();
+SoftwareSerial    atomUART; // RX, TX
+RG15Arduino       rg15;
 
 unsigned long    last_millis       = 0;
 unsigned long    start_millis      = 0;
@@ -51,9 +55,11 @@ bool             pm25aqi_attached  = false;
 bool             scd4x_attached    = false;
 bool             ltr390_attached   = false;
 bool             sht4x_attached    = false;
+bool             rg15_attached     = false;
 
 char*            sensor;
 char*            topic;
+char*            atom_gpio_config;
 int              timezone;
 int              reset_interval;  
 int              publish_interval;
@@ -96,6 +102,29 @@ void publish_scd4x_measurements() {
       strcpy(s, sensor); strcat(s, "/scd4x/humidity");
       node.publishMQTTMeasurement(topic, s, humidity, 0);
   }
+}
+
+
+void publish_rg15_measurements() {
+    char s[strlen(sensor) + 64];
+
+    delay(5000);
+
+    if(rg15.poll()) {
+      strcpy(s, sensor); strcat(s, "/rg15/acc");
+      node.publishMQTTMeasurement(topic, s, rg15.acc, 0);
+
+      strcpy(s, sensor); strcat(s, "/rg15/acc_evt");
+      node.publishMQTTMeasurement(topic, s, rg15.eventAcc, 0);
+
+      strcpy(s, sensor); strcat(s, "/rg15/acc_tot");
+      node.publishMQTTMeasurement(topic, s, rg15.totalAcc, 0);
+
+      strcpy(s, sensor); strcat(s, "/rg15/iph");
+      node.publishMQTTMeasurement(topic, s, rg15.rInt, 0);
+    } else {
+       Serial.println("[error]: RG15 measurement timeout, no measurement obtained");
+    }
 }
 
 
@@ -211,10 +240,39 @@ void setup() {
   node = IoTwx(wait_for_bluetooth_config(uuid, millis(), 1)); // initializes config.json
   if (node.isConfigured())
   {
-    // initialize the I2C bus
-    Wire.begin(26, 32, 10000);
-    Serial.println("");
 
+    Serial.println("[info]: deserializing to JSON");
+    file = SPIFFS.open("/config.json", FILE_READ);
+    deserializeJson(doc, file);
+    file.close();
+
+    Serial.println("[info]: reading from JSON doc (SPIFFS)");
+    timezone         = atoi((const char*)doc["iotwx_timezone"]);
+    sensor           = strdup((const char*)doc["iotwx_sensor"]);
+    topic            = strdup((const char*)doc["iotwx_topic"]);
+    reset_interval   = 1000 * 60 * atoi((const char*)doc["iotwx_reset_interval"]);
+    publish_interval = atoi((const char*)doc["iotwx_publish_interval"]);
+    max_frequency    = atoi((const char*)doc["iotwx_max_frequency"]);
+    atom_gpio_config = strdup((const char*)doc["iotwx_gpio_config"]);
+    
+    // initialize the I2C bus
+    if (strcmp(atom_gpio_config,"A") == 0) {
+      atomUART.begin(9600, SWSERIAL_8N1, 32, 26);
+      rg15.setStream(&atomUART);
+
+      Serial.println("[info]: OK Found RG15 on Grove, using pins 21,25 for I2C");
+      blink_led(LED_OK, LED_SLOW);
+      rg15_attached = true;
+
+      // set i2c to other pins on gpio
+      Wire.begin(25, 21, 10000);
+    } else {
+      Serial.println("[info]: GPIO_config is not A, using pins 26,32 (Grove) for I2C");
+
+      Wire.begin(26, 32, 10000);
+      Serial.println("");
+    }
+    
     // check for i2c device connectivity
     while (!i2c_device_connected) {
       /// bme680
@@ -294,20 +352,6 @@ void setup() {
     }
     delay(1000);
 
-
-    Serial.println("[info]: deserializing to JSON");
-    file = SPIFFS.open("/config.json", FILE_READ);
-    deserializeJson(doc, file);
-    file.close();
-
-    Serial.println("[info]: reading from JSON doc (SPIFFS)");
-    timezone         = atoi((const char*)doc["iotwx_timezone"]);
-    sensor           = strdup((const char*)doc["iotwx_sensor"]);
-    topic            = strdup((const char*)doc["iotwx_topic"]);
-    reset_interval   = 1000 * 60 * atoi((const char*)doc["iotwx_reset_interval"]);
-    publish_interval = atoi((const char*)doc["iotwx_publish_interval"]);
-    max_frequency    = atoi((const char*)doc["iotwx_max_frequency"]);
-
     // begin shutdown sequence, downthrottle, shutdown wifi and BT
     btStop(); Serial.println("[info]: BT disconnected for power reduction");
     setCpuFrequencyMhz(max_frequency); Serial.println(); Serial.print("[info] CPU downthrottled to "); Serial.print(max_frequency); Serial.println("Mhz for power reduction");
@@ -326,9 +370,10 @@ void loop() {
     node.establishCommunications();
     if (bme680_attached)  publish_bme680_measurements();
     if (pm25aqi_attached) publish_pmsa0031_measurements();
-    if (scd4x_attached) publish_scd4x_measurements();
-    if (ltr390_attached) publish_ltr390_measurements();
-    if (sht4x_attached) publish_sht4x_measurements();
+    if (scd4x_attached)   publish_scd4x_measurements();
+    if (ltr390_attached)  publish_ltr390_measurements();
+    if (sht4x_attached)   publish_sht4x_measurements();
+    if (rg15_attached)    publish_rg15_measurements();
     
     // Configure the timer to wake us up!
     delay(1000);
